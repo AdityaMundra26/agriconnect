@@ -15,7 +15,3 @@ function notImplemented(req, res) {
 export const analyticsRouter = Router();
 analyticsRouter.use(authenticate);
 analyticsRouter.get('/yield', notImplemented);
-
-export const assistantRouter = Router();
-assistantRouter.use(authenticate);
-assistantRouter.post('/query', notImplemented);

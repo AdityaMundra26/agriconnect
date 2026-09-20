@@ -15,6 +15,7 @@ export default function Navbar() {
             <Link to="/marketplace">Marketplace</Link>
             <Link to="/reports">Field Reports</Link>
             <Link to="/analytics">Analytics</Link>
+            <Link to="/assistant">Assistant</Link>
             <span className="nav-user">{user.name} ({user.role})</span>
             <button onClick={logout}>Log out</button>
           </>

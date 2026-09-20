@@ -13,6 +13,10 @@ export const REPORT_SEVERITIES = ['low', 'medium', 'high', 'critical'];
 
 const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 
+export function isAiAvailable() {
+  return client !== null;
+}
+
 const CLASSIFY_SYSTEM_PROMPT = `You triage field issue reports for a farm management app.
 Given a farmer's free-text report, classify it and respond with ONLY a JSON object
 (no markdown, no prose) matching this exact shape:
@@ -85,4 +89,26 @@ export async function classifyFieldReport(description) {
     console.error('AI classification failed, falling back to rule-based classifier:', err.message);
     return ruleBasedClassify(description);
   }
+}
+
+const ASSISTANT_SYSTEM_PROMPT = `You are a farm assistant answering a user's question about their own
+AgriConnect account. You are given their farm data as context below. Answer ONLY using that data -
+if the data doesn't contain the answer, say so plainly instead of guessing or inventing numbers.
+Keep answers concise (a few sentences, or a short list). Do not repeat the raw data verbatim; interpret it.`;
+
+export async function answerFarmQuery(question, contextText) {
+  if (!client) {
+    throw new Error('AI assistant unavailable: ANTHROPIC_API_KEY is not configured');
+  }
+
+  const response = await client.messages.create({
+    model: 'claude-opus-5',
+    max_tokens: 1024,
+    output_config: { effort: 'low' },
+    system: `${ASSISTANT_SYSTEM_PROMPT}\n\n--- Account data ---\n${contextText}`,
+    messages: [{ role: 'user', content: question }],
+  });
+
+  const textBlock = response.content.find((b) => b.type === 'text');
+  return textBlock ? textBlock.text : "I couldn't generate an answer for that.";
 }
