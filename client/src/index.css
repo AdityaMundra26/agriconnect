@@ -119,3 +119,85 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   color: var(--green-dark);
   border: 1px solid var(--green);
 }
+
+.card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.card input, .card select {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.secondary-btn {
+  background: white;
+  color: var(--green-dark);
+  border: 1px solid var(--green);
+}
+.secondary-btn:hover { background: var(--bg); }
+
+.danger-btn {
+  background: #c62828;
+}
+.danger-btn:hover { background: #8e1c1c; }
+
+.plot-list {
+  list-style: none;
+  padding: 0;
+}
+
+.card textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+
+.hint {
+  color: #667;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.report-header {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  color: white;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.badge.outline {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+}

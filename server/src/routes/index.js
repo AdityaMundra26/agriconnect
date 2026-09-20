@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import authRoutes from './authRoutes.js';
+import farmRoutes from './farmRoutes.js';
+import plotRoutes from './plotRoutes.js';
+import reportRoutes from './reportRoutes.js';
 import {
-  farmsRouter,
-  plotsRouter,
   advisoryRouter,
   listingsRouter,
   ordersRouter,
-  reportsRouter,
   analyticsRouter,
   assistantRouter,
 } from './stubRoutes.js';
@@ -14,12 +14,12 @@ import {
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/farms', farmsRouter);
-router.use('/plots', plotsRouter);
+router.use('/farms', farmRoutes);
+router.use('/plots', plotRoutes);
 router.use('/advisory', advisoryRouter);
 router.use('/listings', listingsRouter);
 router.use('/orders', ordersRouter);
-router.use('/reports', reportsRouter);
+router.use('/reports', reportRoutes);
 router.use('/analytics', analyticsRouter);
 router.use('/assistant', assistantRouter);
 

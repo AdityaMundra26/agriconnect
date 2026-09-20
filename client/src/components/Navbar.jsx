@@ -11,6 +11,7 @@ export default function Navbar() {
         {user ? (
           <>
             <Link to="/dashboard">Dashboard</Link>
+            {user.role === 'farmer' && <Link to="/farm">My Farm</Link>}
             <Link to="/marketplace">Marketplace</Link>
             <Link to="/reports">Field Reports</Link>
             <span className="nav-user">{user.name} ({user.role})</span>

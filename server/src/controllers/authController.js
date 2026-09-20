@@ -3,7 +3,10 @@ import jwt from 'jsonwebtoken';
 import { createUser, findUserByEmail, findUserById } from '../models/userModel.js';
 
 const SALT_ROUNDS = 10;
-const VALID_ROLES = ['farmer', 'buyer', 'admin'];
+// Self-registration is limited to farmer/buyer; admin accounts are provisioned
+// separately (e.g. directly in the database) so report moderation can't be
+// bypassed by signing up as admin.
+const SELF_SERVICE_ROLES = ['farmer', 'buyer'];
 
 function signToken(user) {
   return jwt.sign(
@@ -20,8 +23,8 @@ export async function register(req, res, next) {
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'name, email and password are required' });
     }
-    if (!VALID_ROLES.includes(role)) {
-      return res.status(400).json({ error: `role must be one of ${VALID_ROLES.join(', ')}` });
+    if (!SELF_SERVICE_ROLES.includes(role)) {
+      return res.status(400).json({ error: `role must be one of ${SELF_SERVICE_ROLES.join(', ')}` });
     }
     if (password.length < 8) {
       return res.status(400).json({ error: 'password must be at least 8 characters' });
