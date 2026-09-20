@@ -16,6 +16,7 @@ export default function Navbar() {
             <Link to="/reports">Field Reports</Link>
             <Link to="/analytics">Analytics</Link>
             <Link to="/assistant">Assistant</Link>
+            {user.role === 'admin' && <Link to="/admin">Admin</Link>}
             <span className="nav-user">{user.name} ({user.role})</span>
             <button onClick={logout}>Log out</button>
           </>

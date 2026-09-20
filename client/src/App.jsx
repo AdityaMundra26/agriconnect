@@ -11,6 +11,7 @@ import Reports from './pages/Reports.jsx';
 import Farm from './pages/Farm.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Assistant from './pages/Assistant.jsx';
+import Admin from './pages/Admin.jsx';
 
 export default function App() {
   return (
@@ -27,6 +28,9 @@ export default function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/assistant" element={<Assistant />} />
+        </Route>
+        <Route element={<ProtectedRoute roles={['admin']} />}>
+          <Route path="/admin" element={<Admin />} />
         </Route>
       </Routes>
     </AuthProvider>

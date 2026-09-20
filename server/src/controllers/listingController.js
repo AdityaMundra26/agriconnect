@@ -3,6 +3,7 @@ import {
   findListingById,
   findActiveListings,
   findListingsByFarmer,
+  findAllListings,
   updateListing,
 } from '../models/listingModel.js';
 
@@ -25,6 +26,18 @@ export async function browseListings(req, res, next) {
 export async function myListings(req, res, next) {
   try {
     const listings = await findListingsByFarmer(req.user.id);
+    res.json({ listings });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function adminListings(req, res, next) {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    const listings = await findAllListings();
     res.json({ listings });
   } catch (err) {
     next(err);
@@ -66,7 +79,7 @@ export async function updateListingHandler(req, res, next) {
     if (!listing) {
       return res.status(404).json({ error: 'Listing not found' });
     }
-    if (listing.farmer_id !== req.user.id) {
+    if (listing.farmer_id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ error: 'You do not own this listing' });
     }
 

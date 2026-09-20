@@ -43,6 +43,17 @@ export async function findListingsByFarmer(farmerId) {
   return result.rows;
 }
 
+// Admin moderation view - every listing regardless of status or owner.
+export async function findAllListings() {
+  const result = await query(
+    `SELECT listings.*, users.name AS farmer_name
+     FROM listings
+     JOIN users ON users.id = listings.farmer_id
+     ORDER BY listings.created_at DESC`
+  );
+  return result.rows;
+}
+
 export async function updateListing(id, fields) {
   const columns = {
     quantity: 'quantity',
