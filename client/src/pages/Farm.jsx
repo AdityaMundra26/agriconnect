@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getMyFarm, createFarm, updateFarm } from '../api/farms.js';
 import { listPlots, createPlot, updatePlot, deletePlot } from '../api/plots.js';
+import { getAdvisory } from '../api/advisory.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const IRRIGATION_TYPES = ['none', 'rainfed', 'canal', 'borewell', 'drip', 'sprinkler'];
@@ -27,6 +28,9 @@ export default function Farm() {
   const [plotForm, setPlotForm] = useState({ name: '', area: '', cropHistory: '' });
   const [savingPlot, setSavingPlot] = useState(false);
   const [editingPlotId, setEditingPlotId] = useState(null);
+
+  const [advisories, setAdvisories] = useState({});
+  const [loadingAdvisoryId, setLoadingAdvisoryId] = useState(null);
 
   useEffect(() => {
     loadFarm();
@@ -134,6 +138,19 @@ export default function Farm() {
       if (editingPlotId === id) resetPlotForm();
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete plot');
+    }
+  }
+
+  async function handleGetAdvisory(plotId) {
+    setError('');
+    setLoadingAdvisoryId(plotId);
+    try {
+      const advisory = await getAdvisory(plotId);
+      setAdvisories((prev) => ({ ...prev, [plotId]: advisory }));
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to load advisory');
+    } finally {
+      setLoadingAdvisoryId(null);
     }
   }
 
@@ -276,7 +293,32 @@ export default function Farm() {
                     <button type="button" className="danger-btn" onClick={() => handleDeletePlot(plot.id)}>
                       Delete
                     </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => handleGetAdvisory(plot.id)}
+                      disabled={loadingAdvisoryId === plot.id}
+                    >
+                      {loadingAdvisoryId === plot.id ? 'Loading...' : 'Get advisory'}
+                    </button>
                   </div>
+
+                  {advisories[plot.id] && (
+                    <div className="advisory">
+                      <p><strong>Season:</strong> {advisories[plot.id].season}</p>
+                      <p>{advisories[plot.id].sowingWindow}</p>
+                      <p><strong>Irrigation:</strong> {advisories[plot.id].irrigation}</p>
+                      <p><strong>Fertilizer:</strong> {advisories[plot.id].fertilizer}</p>
+                      {advisories[plot.id].weather ? (
+                        <p className="hint">
+                          Current weather: {advisories[plot.id].weather.description},{' '}
+                          {advisories[plot.id].weather.tempC}°C, {advisories[plot.id].weather.humidity}% humidity
+                        </p>
+                      ) : (
+                        <p className="hint">{advisories[plot.id].weatherNote}</p>
+                      )}
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

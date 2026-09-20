@@ -5,8 +5,8 @@ import plotRoutes from './plotRoutes.js';
 import reportRoutes from './reportRoutes.js';
 import listingRoutes from './listingRoutes.js';
 import orderRoutes from './orderRoutes.js';
+import advisoryRoutes from './advisoryRoutes.js';
 import {
-  advisoryRouter,
   analyticsRouter,
   assistantRouter,
 } from './stubRoutes.js';
@@ -16,7 +16,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/farms', farmRoutes);
 router.use('/plots', plotRoutes);
-router.use('/advisory', advisoryRouter);
+router.use('/advisory', advisoryRoutes);
 router.use('/listings', listingRoutes);
 router.use('/orders', orderRoutes);
 router.use('/reports', reportRoutes);

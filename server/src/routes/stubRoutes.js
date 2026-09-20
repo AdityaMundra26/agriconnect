@@ -10,10 +10,6 @@ function notImplemented(req, res) {
   res.status(501).json({ error: `${req.method} ${req.baseUrl}${req.path} is not implemented yet` });
 }
 
-export const advisoryRouter = Router();
-advisoryRouter.use(authenticate);
-advisoryRouter.get('/:plotId', notImplemented);
-
 export const analyticsRouter = Router();
 analyticsRouter.use(authenticate);
 analyticsRouter.get('/yield', notImplemented);
