@@ -14,15 +14,6 @@ export const advisoryRouter = Router();
 advisoryRouter.use(authenticate);
 advisoryRouter.get('/:plotId', notImplemented);
 
-export const listingsRouter = Router();
-listingsRouter.get('/', notImplemented);
-listingsRouter.post('/', authenticate, notImplemented);
-
-export const ordersRouter = Router();
-ordersRouter.use(authenticate);
-ordersRouter.get('/', notImplemented);
-ordersRouter.post('/', notImplemented);
-
 export const analyticsRouter = Router();
 analyticsRouter.use(authenticate);
 analyticsRouter.get('/yield', notImplemented);

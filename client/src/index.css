@@ -201,3 +201,9 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   color: var(--text);
   border: 1px solid var(--border);
 }
+
+.card.filters {
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
