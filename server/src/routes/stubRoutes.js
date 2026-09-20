@@ -10,11 +10,11 @@ function notImplemented(req, res) {
   res.status(501).json({ error: `${req.method} ${req.baseUrl}${req.path} is not implemented yet` });
 }
 
+// Yield analytics needs harvested-quantity tracking that doesn't exist yet
+// (crop_cycles has no yield field) - left stubbed until that's built.
 export const analyticsRouter = Router();
 analyticsRouter.use(authenticate);
 analyticsRouter.get('/yield', notImplemented);
-analyticsRouter.get('/reports', notImplemented);
-analyticsRouter.get('/marketplace', notImplemented);
 
 export const assistantRouter = Router();
 assistantRouter.use(authenticate);

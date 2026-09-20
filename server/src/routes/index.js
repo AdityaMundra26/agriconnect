@@ -6,6 +6,7 @@ import reportRoutes from './reportRoutes.js';
 import listingRoutes from './listingRoutes.js';
 import orderRoutes from './orderRoutes.js';
 import advisoryRoutes from './advisoryRoutes.js';
+import analyticsRoutes from './analyticsRoutes.js';
 import {
   analyticsRouter,
   assistantRouter,
@@ -20,6 +21,7 @@ router.use('/advisory', advisoryRoutes);
 router.use('/listings', listingRoutes);
 router.use('/orders', orderRoutes);
 router.use('/reports', reportRoutes);
+router.use('/analytics', analyticsRoutes);
 router.use('/analytics', analyticsRouter);
 router.use('/assistant', assistantRouter);
 

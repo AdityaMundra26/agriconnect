@@ -2,15 +2,9 @@ import { useEffect, useState } from 'react';
 import { listReports, createReport, updateReportStatus } from '../api/reports.js';
 import { listPlots } from '../api/plots.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { SEVERITY_COLORS } from '../charts/theme.js';
 
 const STATUSES = ['open', 'in_progress', 'resolved', 'rejected'];
-
-const SEVERITY_COLORS = {
-  low: '#2e7d32',
-  medium: '#f9a825',
-  high: '#ef6c00',
-  critical: '#c62828',
-};
 
 function SeverityBadge({ severity }) {
   if (!severity) return null;

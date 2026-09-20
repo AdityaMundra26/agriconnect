@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard.jsx';
 import Marketplace from './pages/Marketplace.jsx';
 import Reports from './pages/Reports.jsx';
 import Farm from './pages/Farm.jsx';
+import Analytics from './pages/Analytics.jsx';
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
           <Route path="/farm" element={<Farm />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/analytics" element={<Analytics />} />
         </Route>
       </Routes>
     </AuthProvider>

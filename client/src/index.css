@@ -221,3 +221,19 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .advisory p {
   margin: 0;
 }
+
+.page-wide {
+  max-width: 1100px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.chart-card h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+}
