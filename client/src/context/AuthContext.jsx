@@ -1,12 +1,13 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { loginUser, registerUser, fetchMe } from '../api/auth.js';
+import { TOKEN_KEY } from '../api/client.js';
 
 const AuthContext = createContext(null);
-const TOKEN_KEY = 'agriconnect_token';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -20,9 +21,20 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // Fired by the axios interceptor when any request comes back 401.
+  useEffect(() => {
+    const onLogout = () => {
+      setUser(null);
+      setSessionExpired(true);
+    };
+    window.addEventListener('agriconnect:logout', onLogout);
+    return () => window.removeEventListener('agriconnect:logout', onLogout);
+  }, []);
+
   async function login(credentials) {
     const { user, token } = await loginUser(credentials);
     localStorage.setItem(TOKEN_KEY, token);
+    setSessionExpired(false);
     setUser(user);
     return user;
   }
@@ -30,17 +42,18 @@ export function AuthProvider({ children }) {
   async function register(details) {
     const { user, token } = await registerUser(details);
     localStorage.setItem(TOKEN_KEY, token);
+    setSessionExpired(false);
     setUser(user);
     return user;
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
     setUser(null);
-  }
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, register, logout, sessionExpired }}>
       {children}
     </AuthContext.Provider>
   );

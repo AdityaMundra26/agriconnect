@@ -5,76 +5,105 @@ Smart Crop Advisory & Farm-to-Market Marketplace Platform.
 Built for 24CIE554 — Full Stack Development.
 Team: Aditya Mundra (1MS24CI009), Harsh Tiwari (1MS24CI052).
 
-A platform where farmers get rule-based crop/irrigation advisory for their plots,
-report field issues that get auto-classified by an LLM, sell produce directly to
-buyers through a marketplace, track everything on an analytics dashboard, and ask
-an AI assistant questions grounded in their own account data. Admins moderate
-listings and field reports.
+Farmers get rule-based crop, irrigation and fertilizer advisory for each plot,
+track crop cycles from sowing to harvest, report field issues that are
+auto-classified, and sell produce directly to buyers. Buyers browse and order
+produce and track deliveries. Admins moderate listings and field reports. Everyone
+gets role-specific dashboards, analytics, in-app notifications and an AI assistant
+grounded in their own data.
+
+## Features
+
+| Module | What it does |
+|---|---|
+| **Auth & roles** | JWT + bcrypt, farmer / buyer / admin roles, protected routes, auto-logout on expired sessions, profile editing |
+| **Dashboard** | Role-specific KPIs, recent orders, crop calendar, reports needing attention, quick actions |
+| **My Farm** | Farm profile, plots (CRUD), crop cycles (planned → sown → growing → harvested) with progress bars and harvest quantities |
+| **Crop advisory** | Season detection (kharif / rabi / zaid), crop suggestions ranked by soil + preferences, irrigation schedule, soil-specific fertilizer advice, crop-specific tips, weather alerts (heat, frost, humidity, rain, wind) |
+| **Marketplace** | Product cards with search, price filter and sorting; order modal with live total; farmers create, edit, close and re-activate listings |
+| **Orders** | Status tracker (pending → confirmed → shipped → delivered); only valid forward transitions are allowed; cancelling restores stock in the same DB transaction; row locking prevents overselling |
+| **Field reports** | Free-text reports auto-classified by category, severity and location (Claude, or a keyword classifier offline); admin moderation with notes; full status timeline |
+| **Live notifications** | Pushed instantly over Server-Sent Events, no refresh needed: bell badge + toast for new orders, order status changes, sold-out listings, report updates, admin moderation. Falls back to polling if the stream drops |
+| **SMS & voice alerts** | Opt-in per user from Profile, with a "Send test" button. SMS for new orders, order updates and report updates; a **voice call** to admins when a critical field report is filed. Delivered via Twilio, or simulated and logged when no gateway is configured. Admins see every attempt in an SMS & voice log |
+| **Analytics** | Revenue/orders over time, top crops, order status, yield by crop and per acre, harvest over time, report breakdowns; scoped per role |
+| **AI assistant** | Chat with conversation history, grounded only in the user's own data; works offline with rule-based answers if no API key is set |
+| **Admin console** | Listing moderation (with confirmation + farmer notification), user directory with activity counts, SMS & voice alert log |
+| **UI** | Responsive sidebar layout, mobile menu, dark mode, toasts, modals, drawers, skeleton loaders, empty states, confirm dialogs |
 
 ## Stack
 
-- **Frontend:** React (Vite), React Router, Axios, Recharts
-- **Backend:** Node.js + Express (ESM), REST API
-- **Database:** PostgreSQL
+- **Frontend:** React 19 (Vite), React Router, Axios, Recharts, lucide-react icons, hand-written CSS design system (light + dark)
+- **Backend:** Node.js + Express 5 (ESM), REST API
+- **Database:** PostgreSQL (raw SQL via `pg`, transactions + row locks for orders)
 - **Auth:** JWT + bcrypt
-- **AI:** Claude API (field-report classification, grounded Q&A assistant) — both
-  degrade to a deterministic fallback if no API key is configured
-- **Weather:** OpenWeatherMap (optional — advisory falls back to season-only
-  recommendations without it)
+- **AI:** Claude API (`claude-opus-5-5`): structured-output report classification and the grounded assistant. Both fall back to deterministic logic when `ANTHROPIC_API_KEY` isn't set
+- **Weather:** OpenWeatherMap (optional, cached 10 min)
 
 ## Project structure
 
 ```
 agriconnect/
-├── client/   React app (Vite)
+├── client/                React app (Vite)
 │   └── src/
-│       ├── pages/        one file per route
-│       ├── components/   Navbar, ProtectedRoute
-│       ├── context/      AuthContext (JWT session)
-│       ├── api/          one file per backend resource
-│       └── charts/       shared chart color theme
-├── server/   Express API
-│   └── src/
-│       ├── routes/       one file per resource, mounted in routes/index.js
-│       ├── controllers/  request handling + validation
-│       ├── models/       raw SQL (pg), one file per table/domain
-│       ├── services/     aiService, weatherService, advisoryService
-│       └── middleware/   JWT auth, error handling
+│       ├── pages/         one file per route
+│       ├── components/    AppLayout (sidebar/topbar), NotificationBell, ProtectedRoute, ui.jsx (Modal, Drawer, StatCard, …)
+│       ├── context/       AuthContext, ToastContext, ThemeContext
+│       ├── hooks/         useLoader (async data loading)
+│       ├── utils/         formatting helpers, constants, status colors
+│       ├── api/           one file per backend resource
+│       └── charts/        chart color theme (light + dark)
+├── server/                Express API
+│   ├── src/
+│   │   ├── routes/        one file per resource, mounted in routes/index.js
+│   │   ├── controllers/   request handling + validation
+│   │   ├── models/        raw SQL, one file per table/domain
+│   │   ├── services/      ai, advisory, weather, notifications, assistant context
+│   │   └── middleware/    JWT auth, error handling
 │   └── db/
-│       ├── schema.sql    full Postgres schema
-│       └── migrate.js    applies schema.sql to DATABASE_URL
+│       ├── schema.sql     full Postgres schema (idempotent, safe to re-run)
+│       ├── migrate.js     applies schema.sql
+│       └── seed.js        demo accounts + realistic sample data
 └── README.md
 ```
 
 ## Setup
 
-### 1. Database
+### 1. Backend + database
 
-Create a PostgreSQL database — a free [Neon](https://neon.tech) project works well
-and needs no local install — and note its connection string.
-
-```bash
-cd server
-cp .env.example .env   # fill in DATABASE_URL and JWT_SECRET (see table below)
-node db/migrate.js     # applies db/schema.sql
-```
-
-### 2. Backend
+Create a PostgreSQL database (a free [Neon](https://neon.tech) project works and
+needs no local install) and note its connection string.
 
 ```bash
 cd server
 npm install
+cp .env.example .env    # fill in DATABASE_URL and JWT_SECRET
+npm run setup           # applies the schema, then seeds demo data
 npm run dev             # http://localhost:5000
 ```
 
-### 3. Frontend
+`npm run migrate` and `npm run seed` can also be run separately. The schema is
+idempotent, so re-running it upgrades an existing database without losing data.
+The seed only touches the `@demo.com` accounts.
+
+### 2. Frontend
 
 ```bash
 cd client
 npm install
 cp .env.example .env    # defaults to http://localhost:5000/api
-npm run dev              # http://localhost:5173
+npm run dev             # http://localhost:5173
 ```
+
+### Demo accounts
+
+All use the password **`demo1234`**. The login page also has one-click demo buttons.
+
+| Role | Email | Has |
+|---|---|---|
+| Farmer | `farmer@demo.com` | Farm in Mandya, 3 plots, crop cycles, listings, orders, reports |
+| Farmer | `farmer2@demo.com` | Farm in Nashik with onion/wheat/grapes |
+| Buyer | `buyer@demo.com` | 12 orders across all statuses |
+| Admin | `admin@demo.com` | Moderation access to everything |
 
 ### Environment variables
 
@@ -84,42 +113,29 @@ npm run dev              # http://localhost:5173
 | `JWT_SECRET` | server | Yes | Any long random string |
 | `JWT_EXPIRES_IN` | server | No | Defaults to `7d` |
 | `CLIENT_ORIGIN` | server | No | CORS origin, defaults to `http://localhost:5173` |
-| `ANTHROPIC_API_KEY` | server | No | Without it: field reports use a keyword-based classifier instead of the LLM, and the AI assistant returns your raw data instead of a generated answer |
-| `OPENWEATHER_API_KEY` | server | No | Without it: crop advisory gives season-only recommendations (no live weather) |
+| `ANTHROPIC_API_KEY` | server | No | Without it, reports use the keyword classifier and the assistant answers with rule-based summaries of your data |
+| `OPENWEATHER_API_KEY` | server | No | Without it, advisory is season/soil-based with no weather alerts |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | server | No | Real SMS and voice calls. Without them, alerts are simulated: logged to the console and the admin alert log, not sent |
+| `SMS_DEFAULT_COUNTRY_CODE` | server | No | Added to 10-digit numbers, defaults to `91` |
 | `VITE_API_URL` | client | No | Defaults to `http://localhost:5000/api` |
 
 ## Demo walkthrough
 
-A suggested path through every module for a live demo or viva:
+1. **Log in as the farmer** (one click on the login page). The dashboard shows sales, pending orders, the crop calendar and recent reports.
+2. **My Farm**: open **Advisory** on a plot to see season, crop suggestions, irrigation, fertilizer and crop tips. Add a crop cycle, then edit it to *harvested* with a quantity.
+3. **Field Reports**: submit *"Aphids spreading fast on the mustard near the east boundary"*. It's tagged *pest / high / the east boundary*. Click it to see the timeline.
+4. **Marketplace → New listing**: publish produce.
+5. **Log in as the buyer**, browse and filter the marketplace, and **Order now**. The farmer gets a notification.
+6. **Back as the farmer → Orders**: confirm, ship and deliver the order. The buyer is notified at each step. Try cancelling another order and watch the stock return to the listing.
+7. **Analytics**: revenue, orders, yield and report charts (toggle dark mode in the top bar).
+8. **Live updates**: keep the farmer logged in in one window and place an order as the buyer in a private window. The farmer's bell and a toast update instantly. On **Profile**, click **Send test** under SMS alerts, then check **Admin Console → SMS & voice log**.
+9. **Assistant**: ask *"How are my sales doing?"* or *"What crops should I sow?"*
+10. **Log in as admin**: the dashboard shows urgent reports; **Field Reports** lets you filter and resolve with a note; **Admin Console** moderates listings and lists users.
 
-1. **Register** two accounts at `/register` — one as **farmer**, one as **buyer**.
-   (Self-registration is limited to farmer/buyer; see "Creating an admin" below.)
-2. **As the farmer:** go to **My Farm**, create a farm profile (location, soil
-   type, irrigation access), then add a plot.
-3. Click **Get advisory** on the plot — shows a sowing window, irrigation
-   schedule, and fertilizer advice based on the farm profile (+ live weather if
-   `OPENWEATHER_API_KEY` is set).
-4. Go to **Field Reports** and submit something like *"Irrigation pipe broken
-   near plot 2, water is flooding the field"* — it's auto-tagged with a category,
-   severity, and location.
-5. Go to **Marketplace** and create a produce listing (crop, quantity, price).
-6. **As the buyer:** go to **Marketplace**, browse/filter listings, and place an
-   order.
-7. **Back as the farmer:** see the order under **My Orders** in Marketplace and
-   advance its status (confirmed → shipped → delivered).
-8. **As either user:** open **Analytics** to see report and marketplace charts
-   populate from the data just created.
-9. Open **Assistant** and ask something like *"What issues have I reported?"* or
-   *"How is my marketplace activity?"*
-10. **Promote a user to admin** (see below), log in as them, and open **Admin**
-    to moderate any listing regardless of owner; admins also see every field
-    report (with status controls) on the **Field Reports** page.
+### Creating your own admin
 
-### Creating an admin account
-
-Admin accounts aren't self-service (so report/listing moderation can't be
-bypassed by just signing up as one). Register a normal account, then promote it
-directly in the database:
+Self-registration is limited to farmer/buyer so moderation can't be bypassed.
+Promote an account in the database:
 
 ```sql
 UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
@@ -127,27 +143,39 @@ UPDATE users SET role = 'admin' WHERE email = 'your@email.com';
 
 ## API reference
 
-All routes are under `/api` and (except register/login and browsing listings)
+All routes are under `/api` and (except register/login, listing browse and health)
 require `Authorization: Bearer <token>`.
 
 | Resource | Endpoints |
 |---|---|
-| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` |
+| Auth | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `PUT /auth/me` (incl. `smsAlerts`, `voiceAlerts`), `POST /auth/me/test-alert` (`channel`: sms/voice) |
+| Dashboard | `GET /dashboard/summary` (role-specific) |
 | Farms | `GET /farms/me`, `POST /farms`, `PUT /farms/:id` |
 | Plots | `GET/POST /plots`, `GET/PUT/DELETE /plots/:id` |
+| Crop cycles | `GET /crop-cycles?plotId=`, `POST /crop-cycles`, `PUT/DELETE /crop-cycles/:id` |
 | Advisory | `GET /advisory/:plotId` |
-| Listings | `GET /listings` (public browse), `GET /listings/mine`, `GET /listings/admin`, `POST /listings`, `PUT /listings/:id` |
+| Listings | `GET /listings?cropName=&minPrice=&maxPrice=&sort=` (public), `GET /listings/mine`, `GET /listings/admin`, `POST /listings`, `PUT /listings/:id` |
 | Orders | `GET/POST /orders`, `PUT /orders/:id/status` |
-| Field reports | `GET/POST /reports`, `GET /reports/:id`, `PUT /reports/:id/status` |
-| Analytics | `GET /analytics/reports`, `GET /analytics/marketplace`, `GET /analytics/yield` (stub, see below) |
-| Assistant | `POST /assistant/query` |
+| Field reports | `GET/POST /reports`, `GET /reports/:id` (with history), `PUT /reports/:id/status` (admin, optional `note`) |
+| Notifications | `GET /notifications`, `GET /notifications/stream?token=` (Server-Sent Events), `PUT /notifications/:id/read`, `PUT /notifications/read-all` |
+| Analytics | `GET /analytics/reports`, `GET /analytics/marketplace`, `GET /analytics/yield` |
+| Assistant | `POST /assistant/query` (`question`, optional `history`) |
+| Admin | `GET /admin/users`, `GET /admin/alerts` |
+| Health | `GET /health` (reports whether AI/weather are configured) |
 
-## Known limitations
+## Testing
 
-- **Yield analytics** (`GET /analytics/yield`) is stubbed — `crop_cycles` has no
-  harvested-quantity field, so there's no real data to chart yet.
-- **Notifications**: the `notifications` table exists in the schema but nothing
-  creates or displays notifications yet — a natural next module (e.g. notify a
-  farmer when their listing gets an order, or when a report is resolved).
-- **SMS/voice alerts**: mentioned as a stretch goal in the original spec, not
-  implemented.
+```bash
+cd server && npm test     # 31 unit + 22 API integration tests (API tests need DATABASE_URL)
+cd client && npm test     # 28 component and utility tests (Vitest + Testing Library)
+```
+
+- **Server unit tests** (`server/test/unit`): advisory rules, the offline report classifier, phone-number normalization, the live-notification hub, the offline assistant, order transition rules.
+- **API integration tests** (`server/test/api.test.js`): start the real Express app against Postgres and cover auth, farms, crop cycles, advisory, listings, the full order lifecycle (including stock restore on cancel and a **concurrency test proving orders can't oversell**), field reports, live notifications over SSE, SMS alert logging and admin permissions. They create their own throwaway accounts and delete them afterwards, so real and demo data are never touched.
+- **Client tests** (`client/src/**/*.test.*`): formatting helpers, UI components, the login flow, and the notification bell's live updates.
+- **CI**: `.github/workflows/ci.yml` runs everything on every push against a fresh Postgres 16, and checks the schema can be applied twice.
+
+## Notes
+
+- Live notifications use an in-process event hub, which suits a single server. Running several API instances would need a shared pub/sub (e.g. Redis) behind the same interface in `server/src/services/realtime.js`.
+- Real SMS and voice delivery needs a Twilio account (trial accounts can only message verified numbers). Without one, alerts are simulated and logged so the whole flow can still be demonstrated.

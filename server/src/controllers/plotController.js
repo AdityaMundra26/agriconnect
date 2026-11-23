@@ -7,6 +7,12 @@ import {
   deletePlot,
 } from '../models/plotModel.js';
 
+function invalidArea(area) {
+  if (area === undefined || area === null || area === '') return false;
+  const n = Number(area);
+  return !Number.isFinite(n) || n <= 0;
+}
+
 export async function listPlots(req, res, next) {
   try {
     const farm = await findFarmProfileByUserId(req.user.id);
@@ -47,11 +53,12 @@ export async function createPlotHandler(req, res, next) {
     }
 
     const { name, area, cropHistory } = req.body;
-    if (!name) {
+    if (!name || !String(name).trim()) {
       return res.status(400).json({ error: 'name is required' });
     }
+    if (invalidArea(area)) return res.status(400).json({ error: 'area must be a positive number' });
 
-    const plot = await createPlot({ farmProfileId: farm.id, name, area, cropHistory });
+    const plot = await createPlot({ farmProfileId: farm.id, name: String(name).trim(), area, cropHistory });
     res.status(201).json({ plot });
   } catch (err) {
     next(err);
@@ -69,6 +76,8 @@ export async function updatePlotHandler(req, res, next) {
     }
 
     const { name, area, cropHistory } = req.body;
+    if (name !== undefined && !String(name).trim()) return res.status(400).json({ error: 'name cannot be empty' });
+    if (invalidArea(area)) return res.status(400).json({ error: 'area must be a positive number' });
     const updated = await updatePlot(req.params.id, { name, area, cropHistory });
     res.json({ plot: updated });
   } catch (err) {

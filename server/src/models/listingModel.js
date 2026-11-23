@@ -1,13 +1,30 @@
 import { query } from '../config/db.js';
 
-export async function createListing({ farmerId, cropName, quantity, unit, unitPrice, qualityNotes }) {
+// Every listing read joins the seller's name and farm location so the
+// marketplace can show "who / where" without extra requests.
+const LISTING_SELECT = `
+  SELECT listings.*, users.name AS farmer_name,
+         COALESCE(listings.location, farm_profiles.location) AS seller_location,
+         (SELECT COUNT(*)::int FROM orders WHERE orders.listing_id = listings.id) AS order_count
+  FROM listings
+  JOIN users ON users.id = listings.farmer_id
+  LEFT JOIN farm_profiles ON farm_profiles.user_id = listings.farmer_id`;
+
+const SORTS = {
+  newest: 'listings.created_at DESC',
+  price_asc: 'listings.unit_price ASC',
+  price_desc: 'listings.unit_price DESC',
+  quantity_desc: 'listings.quantity DESC',
+};
+
+export async function createListing({ farmerId, cropName, quantity, unit, unitPrice, qualityNotes, location }) {
   const result = await query(
-    `INSERT INTO listings (farmer_id, crop_name, quantity, unit, unit_price, quality_notes)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
-    [farmerId, cropName, quantity, unit || 'kg', unitPrice, qualityNotes ?? null]
+    `INSERT INTO listings (farmer_id, crop_name, quantity, unit, unit_price, quality_notes, location)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id`,
+    [farmerId, cropName, quantity, unit || 'kg', unitPrice, qualityNotes || null, location || null]
   );
-  return result.rows[0];
+  return findListingDetailed(result.rows[0].id);
 }
 
 export async function findListingById(id) {
@@ -15,73 +32,60 @@ export async function findListingById(id) {
   return result.rows[0];
 }
 
-export async function findActiveListings({ cropName, minPrice, maxPrice } = {}) {
-  const conditions = [`status = 'active'`];
-  const values = [];
-  let i = 1;
+export async function findListingDetailed(id) {
+  const result = await query(`${LISTING_SELECT} WHERE listings.id = $1`, [id]);
+  return result.rows[0];
+}
 
-  if (cropName) { conditions.push(`crop_name ILIKE $${i++}`); values.push(`%${cropName}%`); }
-  if (minPrice) { conditions.push(`unit_price >= $${i++}`); values.push(minPrice); }
-  if (maxPrice) { conditions.push(`unit_price <= $${i++}`); values.push(maxPrice); }
+export async function findActiveListings({ cropName, minPrice, maxPrice, sort } = {}) {
+  const conditions = [`listings.status = 'active'`];
+  const values = [];
+
+  if (cropName) { values.push(`%${cropName}%`); conditions.push(`listings.crop_name ILIKE $${values.length}`); }
+  if (minPrice !== undefined) { values.push(minPrice); conditions.push(`listings.unit_price >= $${values.length}`); }
+  if (maxPrice !== undefined) { values.push(maxPrice); conditions.push(`listings.unit_price <= $${values.length}`); }
 
   const result = await query(
-    `SELECT listings.*, users.name AS farmer_name
-     FROM listings
-     JOIN users ON users.id = listings.farmer_id
-     WHERE ${conditions.join(' AND ')}
-     ORDER BY listings.created_at DESC`,
+    `${LISTING_SELECT} WHERE ${conditions.join(' AND ')} ORDER BY ${SORTS[sort] || SORTS.newest}`,
     values
   );
   return result.rows;
 }
 
 export async function findListingsByFarmer(farmerId) {
-  const result = await query(
-    'SELECT * FROM listings WHERE farmer_id = $1 ORDER BY created_at DESC',
-    [farmerId]
-  );
+  const result = await query(`${LISTING_SELECT} WHERE listings.farmer_id = $1 ORDER BY listings.created_at DESC`, [farmerId]);
   return result.rows;
 }
 
 // Admin moderation view - every listing regardless of status or owner.
 export async function findAllListings() {
-  const result = await query(
-    `SELECT listings.*, users.name AS farmer_name
-     FROM listings
-     JOIN users ON users.id = listings.farmer_id
-     ORDER BY listings.created_at DESC`
-  );
+  const result = await query(`${LISTING_SELECT} ORDER BY listings.created_at DESC`);
   return result.rows;
 }
 
 export async function updateListing(id, fields) {
   const columns = {
+    cropName: 'crop_name',
     quantity: 'quantity',
+    unit: 'unit',
     unitPrice: 'unit_price',
     qualityNotes: 'quality_notes',
+    location: 'location',
     status: 'status',
   };
 
   const sets = [];
   const values = [];
-  let i = 1;
-
   for (const [key, column] of Object.entries(columns)) {
     if (fields[key] !== undefined) {
-      sets.push(`${column} = $${i}`);
       values.push(fields[key]);
-      i += 1;
+      sets.push(`${column} = $${values.length}`);
     }
   }
 
-  if (sets.length === 0) {
-    return findListingById(id);
+  if (sets.length > 0) {
+    values.push(id);
+    await query(`UPDATE listings SET ${sets.join(', ')} WHERE id = $${values.length}`, values);
   }
-
-  values.push(id);
-  const result = await query(
-    `UPDATE listings SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
-    values
-  );
-  return result.rows[0];
+  return findListingDetailed(id);
 }

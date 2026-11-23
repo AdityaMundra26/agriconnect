@@ -7,6 +7,15 @@ import {
 
 const IRRIGATION_TYPES = ['none', 'rainfed', 'canal', 'borewell', 'drip', 'sprinkler'];
 
+function validateFarmBody({ landSize, preferredCrops }) {
+  if (landSize !== undefined && landSize !== null && landSize !== '') {
+    const n = Number(landSize);
+    if (!Number.isFinite(n) || n <= 0) return 'landSize must be a positive number';
+  }
+  if (preferredCrops !== undefined && !Array.isArray(preferredCrops)) return 'preferredCrops must be a list';
+  return null;
+}
+
 export async function getMyFarm(req, res, next) {
   try {
     const farm = await findFarmProfileByUserId(req.user.id);
@@ -35,6 +44,8 @@ export async function createFarm(req, res, next) {
     if (!location) {
       return res.status(400).json({ error: 'location is required' });
     }
+    const bodyError = validateFarmBody(req.body);
+    if (bodyError) return res.status(400).json({ error: bodyError });
     if (irrigationAccess && !IRRIGATION_TYPES.includes(irrigationAccess)) {
       return res.status(400).json({ error: `irrigationAccess must be one of ${IRRIGATION_TYPES.join(', ')}` });
     }
@@ -67,6 +78,8 @@ export async function updateFarm(req, res, next) {
     }
 
     const { location, latitude, longitude, soilType, irrigationAccess, landSize, preferredCrops } = req.body;
+    const bodyError = validateFarmBody(req.body);
+    if (bodyError) return res.status(400).json({ error: bodyError });
     if (irrigationAccess && !IRRIGATION_TYPES.includes(irrigationAccess)) {
       return res.status(400).json({ error: `irrigationAccess must be one of ${IRRIGATION_TYPES.join(', ')}` });
     }
