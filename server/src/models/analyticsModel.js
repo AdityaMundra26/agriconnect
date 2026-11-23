@@ -135,6 +135,7 @@ export async function getYieldByCrop(role, userId) {
   return result.rows;
 }
 
+// Summed across crops, so only kg harvests are included (no mixing units).
 export async function getYieldOverTime(role, userId) {
   const { clause, values } = yieldScope(role, userId);
   const result = await query(
@@ -143,7 +144,8 @@ export async function getYieldOverTime(role, userId) {
      FROM crop_cycles
      JOIN plots ON plots.id = crop_cycles.plot_id
      JOIN farm_profiles ON farm_profiles.id = plots.farm_profile_id
-     WHERE crop_cycles.status = 'harvested' AND crop_cycles.harvested_quantity IS NOT NULL ${clause}
+     WHERE crop_cycles.status = 'harvested' AND crop_cycles.harvested_quantity IS NOT NULL
+       AND crop_cycles.yield_unit = 'kg' ${clause}
      GROUP BY 1 ORDER BY 1`,
     values
   );

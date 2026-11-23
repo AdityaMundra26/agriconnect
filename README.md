@@ -94,16 +94,29 @@ cp .env.example .env    # defaults to http://localhost:5000/api
 npm run dev             # http://localhost:5173
 ```
 
-### Demo accounts
+### Sample demo data
 
-All use the password **`demo1234`**. The login page also has one-click demo buttons.
+A full set of realistic sample data can be switched on and off:
+
+- **From the UI**: the **Load sample data / Remove sample data** button on the login page, or the **Sample demo data** card at the top of the Admin Console. Loading takes about 4 seconds.
+- **From the terminal**: `npm run seed` (load or refresh) and `node db/seed.js --remove`.
+
+It contains 6 farmers across India (Karnataka, Maharashtra, Punjab, Gujarat, Andhra Pradesh, Bihar), 4 buyers and an admin. Together they have 26 listings at realistic prices, about 100 orders over the last 3 months, a year of crop cycles and harvests, 22 field reports with moderation history, notifications, and an SMS/voice alert log. Loading always produces the same data, with dates relative to today. It only ever creates or deletes `@demo.com` accounts, so real accounts are never touched. The one-click demo logins on the login page appear only while the sample data is loaded.
+
+Who can use the toggle is set by `DEMO_TOGGLE`:
+- `public`: anyone, from the login page. This is the default in development.
+- `admin`: admins only, from the Admin Console. This is the default when `NODE_ENV=production`.
+- `off`: terminal only.
+
+All demo accounts use the password **`demo1234`**:
 
 | Role | Email | Has |
 |---|---|---|
-| Farmer | `farmer@demo.com` | Farm in Mandya, 3 plots, crop cycles, listings, orders, reports |
-| Farmer | `farmer2@demo.com` | Farm in Nashik with onion/wheat/grapes |
-| Buyer | `buyer@demo.com` | 12 orders across all statuses |
-| Admin | `admin@demo.com` | Moderation access to everything |
+| Farmer | `farmer@demo.com` | **Main demo account.** Ravi Kumar, Mandya: 3 plots, crop calendar, ~50 orders, reports in every status |
+| Farmer | `farmer2@demo.com` … `farmer6@demo.com` | Nashik (onion, grapes), Ludhiana (basmati, wheat, potato), Anand (banana), Guntur (chilli, cotton, turmeric), Nalanda (makhana, litchi) |
+| Buyer | `buyer@demo.com` | FreshMart, Bengaluru: orders in every status |
+| Buyer | `buyer2@demo.com` … `buyer4@demo.com` | GreenBasket (Kochi), Verma Traders (Delhi), Hotel Annapurna (Pune) |
+| Admin | `admin@demo.com` | Moderation access to everything, SMS + voice alerts on |
 
 ### Environment variables
 
@@ -117,6 +130,7 @@ All use the password **`demo1234`**. The login page also has one-click demo butt
 | `OPENWEATHER_API_KEY` | server | No | Without it, advisory is season/soil-based with no weather alerts |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | server | No | Real SMS and voice calls. Without them, alerts are simulated: logged to the console and the admin alert log, not sent |
 | `SMS_DEFAULT_COUNTRY_CODE` | server | No | Added to 10-digit numbers, defaults to `91` |
+| `DEMO_TOGGLE` | server | No | `public` / `admin` / `off`: who can load and remove sample data from the UI (see above) |
 | `VITE_API_URL` | client | No | Defaults to `http://localhost:5000/api` |
 
 ## Demo walkthrough
@@ -161,13 +175,14 @@ require `Authorization: Bearer <token>`.
 | Analytics | `GET /analytics/reports`, `GET /analytics/marketplace`, `GET /analytics/yield` |
 | Assistant | `POST /assistant/query` (`question`, optional `history`) |
 | Admin | `GET /admin/users`, `GET /admin/alerts` |
+| Demo data | `GET /demo` (status, public), `POST /demo/enable`, `POST /demo/disable` (permission per `DEMO_TOGGLE`) |
 | Health | `GET /health` (reports whether AI/weather are configured) |
 
 ## Testing
 
 ```bash
-cd server && npm test     # 31 unit + 22 API integration tests (API tests need DATABASE_URL)
-cd client && npm test     # 28 component and utility tests (Vitest + Testing Library)
+cd server && npm test     # 31 unit + 23 API integration tests (API tests need DATABASE_URL)
+cd client && npm test     # 30 component and utility tests (Vitest + Testing Library)
 ```
 
 - **Server unit tests** (`server/test/unit`): advisory rules, the offline report classifier, phone-number normalization, the live-notification hub, the offline assistant, order transition rules.

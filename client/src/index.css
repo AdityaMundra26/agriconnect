@@ -634,3 +634,10 @@ a:hover { text-decoration: underline; }
 .switch[data-on='true'] span { transform: translateX(18px); }
 .switch:disabled { opacity: 0.5; cursor: not-allowed; }
 .switch:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--ring); }
+
+/* ---------- Demo data toggle (login page) ---------- */
+
+.demo-toggle-compact {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.7rem 0.85rem; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--border);
+}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Users, Store, Search, ClipboardList, ArrowRight, MessageSquare, PhoneCall, RefreshCw } from 'lucide-react';
 import { adminListings, updateListing } from '../api/listings.js';
 import { getAdminUsers, getAdminAlerts } from '../api/dashboard.js';
+import { getDemoStatus } from '../api/demo.js';
+import DemoDataToggle from '../components/DemoDataToggle.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { useLoader } from '../hooks/useLoader.js';
 import { PageHeader, StatusBadge, EmptyState, SkeletonRows, FormError, Avatar, ConfirmDialog, Badge } from '../components/ui.jsx';
@@ -232,6 +234,8 @@ function AlertsTab() {
 
 export default function Admin() {
   const [tab, setTab] = useState('listings');
+  const demo = useLoader(getDemoStatus);
+  const [refreshKey, setRefreshKey] = useState(0);
   return (
     <>
       <PageHeader
@@ -239,12 +243,21 @@ export default function Admin() {
         description="Moderate marketplace listings and manage platform users."
         actions={<Link to="/reports" className="btn btn-secondary"><ClipboardList size={16} /> Field report queue <ArrowRight size={15} /></Link>}
       />
+      {demo.data && demo.data.toggle !== 'off' && (
+        <DemoDataToggle
+          status={demo.data}
+          onChange={(next) => {
+            demo.setData(next);
+            setRefreshKey((k) => k + 1); // reload the tables below
+          }}
+        />
+      )}
       <div className="tabs">
         <button className={`tab ${tab === 'listings' ? 'active' : ''}`} onClick={() => setTab('listings')}><Store size={16} /> Listings</button>
         <button className={`tab ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}><Users size={16} /> Users</button>
         <button className={`tab ${tab === 'alerts' ? 'active' : ''}`} onClick={() => setTab('alerts')}><MessageSquare size={16} /> SMS & voice log</button>
       </div>
-      {tab === 'listings' ? <ListingsTab /> : tab === 'users' ? <UsersTab /> : <AlertsTab />}
+      {tab === 'listings' ? <ListingsTab key={refreshKey} /> : tab === 'users' ? <UsersTab key={refreshKey} /> : <AlertsTab key={refreshKey} />}
     </>
   );
 }

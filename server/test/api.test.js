@@ -299,6 +299,38 @@ describe('AgriConnect API', { skip: SKIP }, () => {
       assert.ok(alerts.body.alerts.some((a) => a.user_id === ids.farmer));
     });
 
+    test('demo data: status is public; toggle respects DEMO_TOGGLE; load is idempotent', async () => {
+      const original = process.env.DEMO_TOGGLE;
+      try {
+        const s = await api('GET', '/demo');
+        assert.equal(s.status, 200);
+        assert.equal(typeof s.body.enabled, 'boolean');
+
+        process.env.DEMO_TOGGLE = 'off';
+        assert.equal((await api('POST', '/demo/disable', { token: tokens.admin })).status, 403);
+
+        process.env.DEMO_TOGGLE = 'admin';
+        assert.equal((await api('POST', '/demo/disable')).status, 403);
+        assert.equal((await api('POST', '/demo/disable', { token: tokens.farmer })).status, 403);
+
+        // Admin load (re-)seeds the fixed demo set; loading twice gives identical counts.
+        const first = await api('POST', '/demo/enable', { token: tokens.admin });
+        assert.equal(first.status, 200, JSON.stringify(first.body));
+        assert.equal(first.body.enabled, true);
+        assert.equal(first.body.counts.users, 11);
+        const second = await api('POST', '/demo/enable', { token: tokens.admin });
+        assert.deepEqual(second.body.counts, first.body.counts);
+
+        // Demo data never touches non-demo accounts.
+        assert.equal((await api('GET', '/auth/me', { token: tokens.farmer })).status, 200);
+        const demoFarmer = await api('POST', '/auth/login', { body: { email: 'farmer@demo.com', password: 'demo1234' } });
+        assert.equal(demoFarmer.status, 200);
+      } finally {
+        if (original === undefined) delete process.env.DEMO_TOGGLE;
+        else process.env.DEMO_TOGGLE = original;
+      }
+    });
+
     test('assistant answers offline from the user\'s data', async () => {
       const a = await api('POST', '/assistant/query', { token: tokens.farmer, body: { question: 'How are my sales?' } });
       assert.equal(a.status, 200);

@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getDemoStatus } from '../api/demo.js';
+import DemoDataToggle from '../components/DemoDataToggle.jsx';
 import { useNavigate, Link, useLocation, Navigate } from 'react-router-dom';
 import { Mail, Lock, Sprout, ShoppingBasket, ShieldCheck, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -21,6 +23,11 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [demo, setDemo] = useState(null);
+
+  useEffect(() => {
+    getDemoStatus().then(setDemo).catch(() => setDemo(null));
+  }, []);
 
   if (user) return <Navigate to="/dashboard" replace />;
 
@@ -92,15 +99,20 @@ export default function Login() {
             {submitting ? <span className="spinner" /> : <><LogIn size={18} /> Log in</>}
           </button>
 
-          <div className="divider">or explore with a demo account</div>
-          <div className="demo-accounts">
-            {DEMO.map(({ email, label, icon: Icon }) => (
-              <button type="button" key={email} disabled={submitting} onClick={() => doLogin({ email, password: 'demo1234' })}>
-                <Icon size={20} />
-                {label}
-              </button>
-            ))}
-          </div>
+          {demo?.enabled && (
+            <>
+              <div className="divider">or explore with a demo account</div>
+              <div className="demo-accounts">
+                {DEMO.map(({ email, label, icon: Icon }) => (
+                  <button type="button" key={email} disabled={submitting} onClick={() => doLogin({ email, password: 'demo1234' })}>
+                    <Icon size={20} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {demo?.toggle === 'public' && <DemoDataToggle status={demo} onChange={setDemo} variant="compact" />}
 
           <p className="muted" style={{ textAlign: 'center', fontSize: '0.9rem' }}>
             New to AgriConnect? <Link to="/register">Create an account</Link>

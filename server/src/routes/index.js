@@ -10,6 +10,7 @@ import advisoryRoutes from './advisoryRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import assistantRoutes from './assistantRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import demoRoutes from './demoRoutes.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { summary, adminUsers } from '../controllers/dashboardController.js';
 import { isAiAvailable } from '../services/aiService.js';
@@ -29,6 +30,7 @@ router.use('/reports', reportRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/assistant', assistantRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/demo', demoRoutes);
 
 router.get('/dashboard/summary', authenticate, summary);
 router.get('/admin/users', authenticate, authorize('admin'), adminUsers);

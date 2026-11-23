@@ -147,8 +147,14 @@ function MarketplaceSection({ data, role }) {
 
 function YieldSection({ data }) {
   const { t, grid, tick, axisLine, cursor } = useAxes();
-  const { byCrop, overTime, cycleStatus } = data;
-  const total = byCrop.reduce((s, c) => s + (c.unit === 'kg' ? c.total_quantity : 0), 0);
+  const { byCrop: allCrops, overTime, cycleStatus } = data;
+  // One axis = one unit: chart kg crops only and name the rest in the subtitle.
+  const byCrop = allCrops.filter((c) => c.unit === 'kg');
+  const otherUnits = allCrops.filter((c) => c.unit !== 'kg');
+  const otherNote = otherUnits.length
+    ? ` · not shown: ${otherUnits.map((c) => `${c.crop_name} ${num(Math.round(c.total_quantity))} ${c.unit}`).join(', ')}`
+    : '';
+  const total = byCrop.reduce((s, c) => s + c.total_quantity, 0);
   const count = (s) => cycleStatus.find((c) => c.status === s)?.count || 0;
 
   return (
@@ -160,8 +166,8 @@ function YieldSection({ data }) {
         <StatCard icon={PackageCheck} label="Harvests recorded" value={count('harvested')} sub={count('failed') ? `${count('failed')} failed` : undefined} tone="blue" />
       </div>
       <div className="grid-2">
-        <ChartCard title="Yield by crop" subtitle="Total harvested quantity" empty={byCrop.length === 0}>
-          <BarChart data={byCrop.map((c) => ({ ...c, name: `${c.crop_name} (${c.unit})` }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <ChartCard title="Yield by crop" subtitle={`Total harvested, kg${otherNote}`} empty={byCrop.length === 0}>
+          <BarChart data={byCrop.map((c) => ({ ...c, name: c.crop_name }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             {grid}
             <XAxis dataKey="name" tick={tick} axisLine={axisLine} tickLine={false} interval={0} />
             <YAxis tick={tick} axisLine={false} tickLine={false} width={48} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
@@ -169,8 +175,8 @@ function YieldSection({ data }) {
             <Bar dataKey="total_quantity" fill={t.green} radius={[4, 4, 0, 0]} maxBarSize={44} />
           </BarChart>
         </ChartCard>
-        <ChartCard title="Yield per acre" subtitle="Harvested quantity ÷ plot area" empty={byCrop.filter((c) => c.per_acre).length === 0}>
-          <BarChart data={byCrop.filter((c) => c.per_acre).map((c) => ({ ...c, name: `${c.crop_name} (${c.unit})` }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <ChartCard title="Yield per acre" subtitle="Harvested kg ÷ plot area (acres)" empty={byCrop.filter((c) => c.per_acre).length === 0}>
+          <BarChart data={byCrop.filter((c) => c.per_acre).map((c) => ({ ...c, name: c.crop_name }))} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             {grid}
             <XAxis dataKey="name" tick={tick} axisLine={axisLine} tickLine={false} interval={0} />
             <YAxis tick={tick} axisLine={false} tickLine={false} width={48} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
@@ -179,7 +185,7 @@ function YieldSection({ data }) {
           </BarChart>
         </ChartCard>
         {overTime.length > 1 && (
-          <ChartCard title="Harvest over time" subtitle="Monthly harvested quantity" empty={false}>
+          <ChartCard title="Harvest over time" subtitle="Monthly harvested quantity, kg crops" empty={false}>
             <LineChart data={overTime} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               {grid}
               <XAxis dataKey="month" tickFormatter={monthLabel} tick={tick} axisLine={axisLine} tickLine={false} />
